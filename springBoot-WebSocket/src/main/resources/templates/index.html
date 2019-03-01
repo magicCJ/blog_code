@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>websocket</title>
+    <script src="//cdn.bootcss.com/angular.js/1.5.6/angular.min.js"></script>
+    <script src="https://cdn.bootcss.com/sockjs-client/1.1.4/sockjs.min.js"></script>
+    <script src="https://cdn.bootcss.com/stomp.js/2.3.3/stomp.min.js"></script>
+    <script type="text/javascript">
+        /*<![CDATA[*/
+
+        var stompClient = null;
+
+        var app = angular.module('app', []);
+        // 定义客户端的认证信息,按需求配置
+
+        app.controller('MainController', function($rootScope, $scope, $http) {
+
+            $scope.data = {
+                //用户id
+                id : '',
+                //用户名
+                name : '',
+                //连接状态
+                connected : false,
+                //消息
+                message : '',
+                rows : []
+            };
+
+
+
+            //连接
+            $scope.connect = function() {
+                var socket = new SockJS('/websocket');
+                var headers = {
+                    Authorization:'{"id":"' + $scope.data.id + '"}'
+                }
+                stompClient = Stomp.over(socket);
+                stompClient.connect(headers, function(frame) {
+                    // 注册推送时间回调
+                    stompClient.subscribe('/user/message', function(r) {
+                        $scope.data.time = '当前服务器时间：' + r.body;
+                        $scope.data.connected = true;
+                        $scope.$apply();
+                    });
+
+                    $scope.data.connected = true;
+                    $scope.$apply();
+                });
+            };
+
+            $scope.disconnect = function() {
+                if (stompClient != null) {
+                    stompClient.disconnect();
+                }
+                $scope.data.connected = false;
+            }
+
+
+        });
+    </script>
+</head>
+<body ng-app="app" ng-controller="MainController">
+
+<h2>websocket</h2>
+id：<input type="text" ng-model="data.id" placeholder="只能为纯数字..." />
+<br/>
+<label>WebSocket连接状态:</label>
+<button type="button" ng-disabled="data.connected" ng-click="connect()">连接</button>
+<button type="button" ng-click="disconnect()" ng-disabled="!data.connected">断开</button>
+<br />
+<br />
+<div ng-show="data.connected">
+    <label>{{data.time}}</label> <br /> <br />
+</div>
+</body>
+</html>
